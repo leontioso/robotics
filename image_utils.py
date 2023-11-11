@@ -8,7 +8,7 @@ def take_snapshot(image_name):
     camera = cv2.VideoCapture(0)  # Use 0 for the default camera (usually the Raspberry Pi camera)
 
     # Allow the camera to warm up
-    time.sleep(2)
+    #time.sleep(2)
 
     # Capture a single frame
     ret, frame = camera.read()
