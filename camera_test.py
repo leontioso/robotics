@@ -5,7 +5,7 @@ import tensorflow as tf
 from image_utils import take_snapshot
 import pandas as pd
 
-take_snapshot('captured_image.jpg')
+#take_snapshot('captured_image.jpg')
 
 # Load the captured image
 image = cv2.imread('captured_image.jpg')
@@ -18,8 +18,6 @@ preprocessed_image = preprocessed_image.astype(np.uint8)
 preprocessed_image = np.expand_dims(preprocessed_image, axis=0)
 
 
-#preprocessed_image = preprocessed_image / 255.0  # Normalize pixel values
-#preprocessed_image = np.expand_dims(preprocessed_image, axis=0)
 
 interpreter = tf.lite.Interpreter(model_path="lite-model_ssd_mobilenet_v1_1_metadata_2.tflite")
 interpreter.allocate_tensors()
@@ -40,42 +38,46 @@ interpreter.set_tensor(input_details[0]['index'], preprocessed_image)
 # Run inference
 interpreter.invoke()
 
-
-
-#results = pd.DataFrame(data = {
-#    'box': interpreter.get_tensor(output_details[0]["index"][0]),  
-#    'detection_classes': [class_labels.get(int(i)) for i in interpreter.get_tensor(output_details[1]["index"]).astype(np.uint8).flatten()],
-#    'detection_scores' : interpreter.get_tensor(output_details[2]["index"][0])
-#    })
-
-
-boxes = interpreter.get_tensor(output_details[0]['index'])[0]
-classes = list(class_labels.get(int(i)) for i in interpreter.get_tensor(output_details[1]['index'])[0])
-scores = interpreter.get_tensor(output_details[2]['index'])[0]
+#minimum confidence score
 min_conf_threshold = 0.4
 
+results = pd.DataFrame(data={
+    'ymin' : interpreter.get_tensor(output_details[0]['index'])[0][:, 0],
+    'xmin' : interpreter.get_tensor(output_details[0]['index'])[0][:, 1],
+    'ymax' : interpreter.get_tensor(output_details[0]['index'])[0][:, 2],
+    'xmax' : interpreter.get_tensor(output_details[0]['index'])[0][:, 3],
+    'classes' : list(class_labels.get(int(i)) for i in interpreter.get_tensor(output_details[1]['index'])[0]),
+    'scores': interpreter.get_tensor(output_details[2]['index'])[0]
+})
 
-for i in range(len(scores)):
-        if ((scores[i] > min_conf_threshold) and (scores[i] <= 1.0)):
+#filtering results
+results = results[(results.scores <= 1.0) &
+                  (results.scores >= min_conf_threshold)]
 
-            # Get bounding box coordinates and draw box
-            # Interpreter can return coordinates that are outside of image dimensions, need to force them to be within image using max() and min()
-            ymin = int(max(1,(boxes[i][0] * imH)))
-            xmin = int(max(1,(boxes[i][1] * imW)))
-            ymax = int(min(imH,(boxes[i][2] * imH)))
-            xmax = int(min(imW,(boxes[i][3] * imW)))
+# normalization of box cords for the draw
+# Interpreter can return coordinates that are outside of image dimensions, need to force them to be within image using max() and min()
+results['ymin'] = (results['ymin'] * imH).apply(lambda x: int(max(x, 1))) 
+results['xmin'] = (results['xmin'] * imW).apply(lambda x: int(max(x, 1)))
+
+results['ymax'] = (results['ymax'] * imH).apply(lambda x: int(min(x, imH)))
+results['xmax'] = (results['xmax'] * imW).apply(lambda x: int(min(x, imW)))
+
+
+
+for row in results.itertuples():
+    
+    cv2.rectangle(image, (row.xmin,row.ymin), (row.xmax,row.ymax),
+                  (10, 255, 0), 2)
+    
+    label = f'{row.classes}: {int(row.scores*100)}%'  # Example: 'person: 72%'
+    
+    labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
+    label_ymin = max(row.ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
+    cv2.rectangle(image, (row.xmin, label_ymin-labelSize[1]-10), (row.xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
+    cv2.putText(image, label, (row.xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text
             
-            cv2.rectangle(image, (xmin,ymin), (xmax,ymax), (10, 255, 0), 2)
-            
-            object_name = classes[i] # Look up object name from "labels" array using class index
-            label = '%s: %d%%' % (object_name, int(scores[i]*100)) # Example: 'person: 72%'
-            labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
-            label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
-            cv2.rectangle(image, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
-            cv2.putText(image, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text
-            
-            cv2.imwrite('captured_image_proccessed.jpg', image)
-            
+    cv2.imwrite('captured_image_proccessed2.jpg', image)
+    
 
 cv2.destroyAllWindows()
 
