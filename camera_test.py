@@ -5,7 +5,7 @@ import tensorflow as tf
 from image_utils import take_snapshot
 import pandas as pd
 
-#take_snapshot('captured_image.jpg')
+take_snapshot('captured_image.jpg')
 
 # Load the captured image
 image = cv2.imread('captured_image.jpg')
