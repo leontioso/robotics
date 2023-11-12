@@ -5,7 +5,12 @@ import tensorflow as tf
 from image_utils import take_snapshot
 import pandas as pd
 
-take_snapshot('captured_image.jpg')
+#take_snapshot('captured_image.jpg')
+
+#define the box of interest
+predefined_box = (180, 260, 450, 430)
+
+
 
 # Load the captured image
 image = cv2.imread('captured_image.jpg')
@@ -54,6 +59,7 @@ results = pd.DataFrame(data={
 results = results[(results.scores <= 1.0) &
                   (results.scores >= min_conf_threshold)]
 
+
 # normalization of box cords for the draw
 # Interpreter can return coordinates that are outside of image dimensions, need to force them to be within image using max() and min()
 results['ymin'] = (results['ymin'] * imH).apply(lambda x: int(max(x, 1))) 
@@ -62,7 +68,24 @@ results['xmin'] = (results['xmin'] * imW).apply(lambda x: int(max(x, 1)))
 results['ymax'] = (results['ymax'] * imH).apply(lambda x: int(min(x, imH)))
 results['xmax'] = (results['xmax'] * imW).apply(lambda x: int(min(x, imW)))
 
+# filtering the objects that are inside to the are of interest
+wanted_objects = (results.xmin >= predefined_box[0]) & \
+                 (results.ymin >= predefined_box[1]) & \
+                 (results.xmax <= predefined_box[2]) & \
+                 (results.ymax <= predefined_box[3])
 
+results = results[wanted_objects]
+
+print(results)
+
+cv2.rectangle(image,
+              (predefined_box[0], predefined_box[1]),
+              (predefined_box[2], predefined_box[3]),
+                  (0, 0, 0), 2)
+cv2.putText(image,
+             "AreaOfInterest",
+             (predefined_box[0], predefined_box[3] + 15),
+             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
 
 for row in results.itertuples():
     
@@ -76,7 +99,7 @@ for row in results.itertuples():
     cv2.rectangle(image, (row.xmin, label_ymin-labelSize[1]-10), (row.xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
     cv2.putText(image, label, (row.xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text
             
-    cv2.imwrite('captured_image_proccessed2.jpg', image)
+    cv2.imwrite('captured_image_proccessed_3.jpg', image)
     
 
 cv2.destroyAllWindows()
