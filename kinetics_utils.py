@@ -32,13 +32,8 @@ class RoboticArm(ServoKit):
                 direction = -1
                 angle -= 1
             for i in range(int(self.first_leg.angle), int(angle), STEP_ANGLE * direction):
-                if self.second_leg.angle - self.first_leg.angle < 60:
-                    self.set_limb_angle(2, self.second_leg.angle - (2 * direction))
-                elif angle <= MIN_VAL_FIRST_LEG:
-                    self.set_limb_angle(2, MAX_VAL_SECOND_LEG)
                 self.first_leg.angle = i
                 sleep(TIME_INTERVAL)
-            
            
         elif limp == 2 or limp == 'second_leg':
             if int(self.second_leg.angle) < int(angle):
@@ -99,7 +94,18 @@ class RoboticArm(ServoKit):
             raise TypeError('Not a limb')
         
     def grab(self):
-        self.set_limb_angle(3, 5)
+        self.set_limb_angle(3, 100)
+        self.set_limb_angle(1, 120)
+        self.set_limb_angle(2, 130)
+        self.set_limb_angle(1, 160)
+        self.set_limb_angle(2, 120)
+        self.set_limb_angle(3, 30)
+        self.set_limb_angle(2, 130)
+        self.set_limb_angle(1, 100)
+        self.set_limb_angle(2, 180)
+        self.set_limb_angle(1, 40)
+        self.set_limb_angle(3, 100)
+        print('Robotic arm performed grab')
         
     def release(self):
         self.set_limb_angle(3, 80)

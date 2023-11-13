@@ -3,7 +3,7 @@ from time import sleep
 from utils import RoboticArm
 
 channels = 16
-robot = RoboticArm(first_leg_channel=8, second_leg_channel=15, claw_channel=14, channels=16)
+robot = RoboticArm(first_leg_channel=8, second_leg_channel=15, claw_channel=9, channels=16)
 
 
 try:
