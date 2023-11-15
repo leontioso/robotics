@@ -1,7 +1,7 @@
 from adafruit_servokit import ServoKit
 from time import sleep
 
-MIN_VAL_FIRST_LEG = 60
+MIN_VAL_FIRST_LEG = 40
 MAX_VAL_FIRST_LEG = 180
 
 MIN_VAL_SECOND_LEG = 80
@@ -99,11 +99,12 @@ class RoboticArm(ServoKit):
         self.set_limb_angle(2, 130)
         self.set_limb_angle(1, 160)
         self.set_limb_angle(2, 120)
-        self.set_limb_angle(3, 30)
+        self.set_limb_angle(3, 25)
         self.set_limb_angle(2, 130)
         self.set_limb_angle(1, 100)
         self.set_limb_angle(2, 180)
         self.set_limb_angle(1, 40)
+        sleep(0.5)
         self.set_limb_angle(3, 100)
         print('Robotic arm performed grab')
         

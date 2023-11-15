@@ -10,7 +10,7 @@ with open('labels.txt', 'r') as file:
     class_labels = {int(item.split()[0]):item.split()[1] for item in [line.strip() for line in file.readlines()]}
 
 
-def detect_object(predefined_box, filename):
+def detect_object(predefined_box, filename, confidence, area):
 
     # Load the captured image
     image = cv2.imread(filename)
@@ -39,7 +39,7 @@ def detect_object(predefined_box, filename):
     interpreter.invoke()
 
     #minimum confidence score
-    min_conf_threshold = 0.2
+    min_conf_threshold = confidence
 
     results = pd.DataFrame(data={
         'ymin' : interpreter.get_tensor(output_details[0]['index'])[0][:, 0],
@@ -68,9 +68,13 @@ def detect_object(predefined_box, filename):
                      (results.ymin >= predefined_box[1]) & \
                      (results.xmax <= predefined_box[2]) & \
                      (results.ymax <= predefined_box[3])
-              
+                               
 
     results = results[wanted_objects]
+    
+    # filtering the objects considering a predeifined value for size (area)
+   
+    results = results[(results.xmax - results.xmin) * (results.ymax - results.ymin) <= area]
 
     print(results)
 
@@ -80,7 +84,7 @@ def detect_object(predefined_box, filename):
             (0, 0, 0), 2)
     cv2.putText(image,
              "AreaOfInterest",
-             (0, predefined_box[1] + 15),
+             ( predefined_box[0], predefined_box[1] + 15),
              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
 
     for row in results.itertuples():
